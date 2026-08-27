@@ -13,9 +13,16 @@ struct QueueView: View {
                     EmptyStateView(icon: "music.note.list", text: "播放队列为空")
                 } else {
                     List {
+                        let currentSongID = player.currentSong?.identityKey
+                        let isPlaying = player.isPlaying
                         Section("接下来 (\(player.queue.count) 首)") {
                             ForEach(Array(player.queue.enumerated()), id: \.element.identityKey) { index, song in
-                                row(song, index: index)
+                                row(
+                                    song,
+                                    index: index,
+                                    isCurrent: currentSongID == song.identityKey,
+                                    isPlaying: isPlaying
+                                )
                                     .listRowBackground(Color.clear)
                                     .listRowSeparator(.hidden)
                             }
@@ -51,8 +58,7 @@ struct QueueView: View {
     }
 
     @ViewBuilder
-    private func row(_ song: Song, index: Int) -> some View {
-        let isCurrent = index == player.currentIndex
+    private func row(_ song: Song, index: Int, isCurrent: Bool, isPlaying: Bool) -> some View {
         HStack(spacing: 12) {
             CoverImage(url: song.coverURL, size: 42, cornerRadius: 9)
             VStack(alignment: .leading, spacing: 3) {
@@ -67,7 +73,7 @@ struct QueueView: View {
             }
             Spacer()
             if isCurrent {
-                if player.isPlaying {
+                if isPlaying {
                     NowPlayingIndicator()
                 } else {
                     Image(systemName: "pause.fill")

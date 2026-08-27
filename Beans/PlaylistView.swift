@@ -32,10 +32,21 @@ struct PlaylistView: View {
                     List {
                         header
                         Section {
+                            let currentSongID = player.currentSong?.identityKey
+                            let isPlaying = player.isPlaying
                             ForEach(Array(displayedTracks.enumerated()), id: \.element.identityKey) { index, song in
-                                SongCell(song: song, glassRow: true) {
-                                    player.play(songs: displayedTracks, startAt: index)
-                                }
+                                SongCell(
+                                    song: song,
+                                    glassRow: true,
+                                    isCurrent: currentSongID == song.identityKey,
+                                    isPlaying: isPlaying,
+                                    onTap: {
+                                        player.play(songs: displayedTracks, startAt: index)
+                                    },
+                                    onPlayNext: {
+                                        player.playNext(song)
+                                    }
+                                )
                                 .listRowBackground(Color.clear)
                                 .listRowSeparator(.hidden)
                             }

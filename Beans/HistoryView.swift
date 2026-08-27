@@ -10,10 +10,21 @@ struct HistoryView: View {
                     EmptyStateView(icon: "clock.arrow.circlepath", text: "暂无播放历史")
                 } else {
                     List {
+                        let currentSongID = player.currentSong?.identityKey
+                        let isPlaying = player.isPlaying
                         ForEach(Array(player.history.enumerated()), id: \.element.identityKey) { index, song in
-                            SongCell(song: song, glassRow: true) {
-                                player.play(songs: player.history, startAt: index)
-                            }
+                            SongCell(
+                                song: song,
+                                glassRow: true,
+                                isCurrent: currentSongID == song.identityKey,
+                                isPlaying: isPlaying,
+                                onTap: {
+                                    player.play(songs: player.history, startAt: index)
+                                },
+                                onPlayNext: {
+                                    player.playNext(song)
+                                }
+                            )
                             .listRowBackground(Color.clear)
                             .listRowSeparator(.hidden)
                         }

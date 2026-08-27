@@ -20,7 +20,7 @@ struct LocalMusicSection: View {
             if store.playlists.isEmpty {
                 EmptyStateView(icon: "internaldrive", text: "还没有本地歌单\n新建一个歌单，把喜欢的歌曲收藏到本机")
             } else {
-                VStack(spacing: 0) {
+                LazyVStack(spacing: 0) {
                     ForEach(store.playlists) { playlist in
                         Button {
                             selected = playlist
@@ -130,14 +130,25 @@ struct LocalPlaylistDetailSheet: View {
                             }
                         }
                         .listRowBackground(Color.clear)
-                        Section {
-                            ForEach(Array(playlist.songs.enumerated()), id: \.element.identityKey) { index, song in
-                                SongCell(song: song, glassRow: true) {
+                    Section {
+                        let currentSongID = player.currentSong?.identityKey
+                        let isPlaying = player.isPlaying
+                        ForEach(Array(playlist.songs.enumerated()), id: \.element.identityKey) { index, song in
+                            SongCell(
+                                song: song,
+                                glassRow: true,
+                                isCurrent: currentSongID == song.identityKey,
+                                isPlaying: isPlaying,
+                                onTap: {
                                     player.play(songs: playlist.songs, startAt: index)
+                                },
+                                onPlayNext: {
+                                    player.playNext(song)
                                 }
-                                .listRowBackground(Color.clear)
-                                .listRowSeparator(.hidden)
-                                .swipeActions(edge: .trailing) {
+                            )
+                            .listRowBackground(Color.clear)
+                            .listRowSeparator(.hidden)
+                            .swipeActions(edge: .trailing) {
                                     Button(role: .destructive) {
                                         BeansHaptics.tap()
                                         store.removeSong(playlistID: playlistID, songIdentity: song.identityKey)
@@ -264,12 +275,23 @@ struct LocalSearchAddSheet: View {
                     Spacer()
                 } else {
                     List {
+                        let currentSongID = player.currentSong?.identityKey
+                        let isPlaying = player.isPlaying
                         ForEach(Array(results.enumerated()), id: \.element.identityKey) { index, song in
-                            SongCell(song: song, glassRow: true) {
-                                store.addSong(song, to: playlistID)
-                                BeansHaptics.success()
-                                ToastCenter.shared.show("已加入本地歌单")
-                            }
+                            SongCell(
+                                song: song,
+                                glassRow: true,
+                                isCurrent: currentSongID == song.identityKey,
+                                isPlaying: isPlaying,
+                                onTap: {
+                                    store.addSong(song, to: playlistID)
+                                    BeansHaptics.success()
+                                    ToastCenter.shared.show("已加入本地歌单")
+                                },
+                                onPlayNext: {
+                                    player.playNext(song)
+                                }
+                            )
                             .listRowBackground(Color.clear)
                             .listRowSeparator(.hidden)
                         }

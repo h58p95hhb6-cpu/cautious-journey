@@ -26,7 +26,7 @@ struct LibraryView: View {
             // 实例级 UITabBar 清透风格（固定全透明，无需调节）
             TabBarAppearanceConfigurator()
             ScrollView {
-                VStack(alignment: .leading, spacing: 24) {
+                LazyVStack(alignment: .leading, spacing: 24) {
                     header
                     providerPicker
                     LocalMusicSection()
@@ -111,7 +111,7 @@ struct LibraryView: View {
             } else if auth.playlists.isEmpty {
                 createPlaylistCard
             } else {
-                VStack(spacing: 0) {
+                LazyVStack(spacing: 0) {
                     ForEach(auth.playlists) { playlist in
                         Button {
                             selectedPlaylist = playlist
@@ -222,10 +222,20 @@ struct LibraryView: View {
                 EmptyStateView(icon: "clock.arrow.circlepath", text: "暂无播放记录")
             } else {
                 VStack(spacing: 0) {
+                    let currentSongID = player.currentSong?.identityKey
+                    let isPlaying = player.isPlaying
                     ForEach(player.history.prefix(5), id: \.identityKey) { song in
-                        SongCell(song: song) {
-                            playFromHistory(song)
-                        }
+                        SongCell(
+                            song: song,
+                            isCurrent: currentSongID == song.identityKey,
+                            isPlaying: isPlaying,
+                            onTap: {
+                                playFromHistory(song)
+                            },
+                            onPlayNext: {
+                                player.playNext(song)
+                            }
+                        )
                         Divider().overlay(Color.beansComment.opacity(0.15))
                     }
                 }
@@ -474,4 +484,3 @@ struct LibraryView: View {
         }
     }
 }
-

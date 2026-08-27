@@ -1,5 +1,6 @@
 import SwiftUI
 import CoreImage.CIFilterBuiltins
+import ImageIO
 
 // MARK: - 工具
 
@@ -281,46 +282,100 @@ extension View {
 
 // MARK: - 封面图
 
+@MainActor
+final class CoverImageLoader: ObservableObject {
+    @Published var image: UIImage?
+
+    private static let cache = NSCache<NSString, UIImage>()
+    private var task: Task<Void, Never>?
+
+    deinit {
+        task?.cancel()
+    }
+
+    func load(url: URL?, size: CGFloat, scale: CGFloat) {
+        task?.cancel()
+        image = nil
+
+        guard let url else { return }
+        let pixelSize = max(1, Int(size * scale))
+        let cacheKey = Self.cacheKey(url: url, pixelSize: pixelSize)
+        if let cached = Self.cache.object(forKey: cacheKey as NSString) {
+            image = cached
+            return
+        }
+
+        task = Task.detached(priority: .utility) { [weak self] in
+            do {
+                let (data, _) = try await URLSession.shared.data(from: url)
+                guard !Task.isCancelled, let downsampled = Self.downsample(data: data, pixelSize: pixelSize) else { return }
+                await MainActor.run {
+                    Self.cache.setObject(downsampled, forKey: cacheKey as NSString)
+                    self?.image = downsampled
+                }
+            } catch {
+                guard !Task.isCancelled else { return }
+            }
+        }
+    }
+
+    private static func cacheKey(url: URL, pixelSize: Int) -> String {
+        "\(url.absoluteString)#\(pixelSize)"
+    }
+
+    private static func downsample(data: Data, pixelSize: Int) -> UIImage? {
+        let options: [CFString: Any] = [kCGImageSourceShouldCache: false]
+        guard let source = CGImageSourceCreateWithData(data as CFData, options as CFDictionary) else { return nil }
+        let downsampleOptions: [CFString: Any] = [
+            kCGImageSourceCreateThumbnailFromImageAlways: true,
+            kCGImageSourceShouldCacheImmediately: true,
+            kCGImageSourceCreateThumbnailWithTransform: true,
+            kCGImageSourceThumbnailMaxPixelSize: pixelSize
+        ]
+        guard let cgImage = CGImageSourceCreateThumbnailAtIndex(source, 0, downsampleOptions as CFDictionary) else { return nil }
+        return UIImage(cgImage: cgImage)
+    }
+}
+
 struct CoverImage: View {
     let url: URL?
     var size: CGFloat
     var cornerRadius: CGFloat = 12
     /// 封面未加载时的提示文字（播放器大封面用：等待开始播放）；nil 显示中性图标
     var emptyHint: String? = nil
+    @StateObject private var loader = CoverImageLoader()
+    @Environment(\.displayScale) private var displayScale
 
-    // 布局尺寸完全由外层固定容器决定；AsyncImage 只放在 overlay 中渲染，
-    // 图片加载完成与否都不会改变任何布局尺寸（根治"封面加载后错乱"）。
+    // 布局尺寸完全由外层固定容器决定；图片加载与解码只影响 overlay，
+    // 不会改变任何布局尺寸（避免封面加载后引发布局抖动）。
     var body: some View {
         RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
             .fill(Color.beansGlassFill)
             .frame(width: size, height: size)
             .overlay {
-                AsyncImage(url: url) { phase in
-                    switch phase {
-                    case .success(let image):
-                        image.resizable().scaledToFill()
-                            .frame(width: size, height: size)
-                            .clipped()
-                    case .failure:
+                if let image = loader.image {
+                    Image(uiImage: image)
+                        .resizable()
+                        .scaledToFill()
+                        .frame(width: size, height: size)
+                        .clipped()
+                } else if url == nil {
+                    placeholderIcon
+                } else {
+                    ZStack {
                         placeholderIcon
-                    case .empty:
-                        if url == nil {
-                            // 封面地址为空（如酷狗歌手暂无头像）：直接显示占位图标，避免一直转圈
-                            placeholderIcon
-                        } else {
-                            ZStack {
-                                placeholderIcon
-                                ProgressView().tint(Color.beansAmber)
-                            }
-                        }
-                    @unknown default:
-                        placeholderIcon
+                        ProgressView().tint(Color.beansAmber)
                     }
                 }
-                .frame(width: size, height: size)
-                .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
             }
             .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+            .task(id: taskKey) {
+                loader.load(url: url, size: size, scale: displayScale)
+            }
+    }
+
+    private var taskKey: String {
+        "\(url?.absoluteString ?? "nil")#\(Int(size * displayScale))"
     }
 
     private var placeholderIcon: some View {

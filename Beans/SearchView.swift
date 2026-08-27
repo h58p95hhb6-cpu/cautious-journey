@@ -467,6 +467,8 @@ struct SearchView: View {
             } else {
                 ScrollView {
                     LazyVStack(spacing: 8) {
+                        let currentSongID = player.currentSong?.identityKey
+                        let isPlaying = player.isPlaying
                         HStack {
                             Text("找到 \(songResults.count) 首 · \(provider.rawValue)")
                                 .font(BeansFont.appFont(12))
@@ -487,14 +489,22 @@ struct SearchView: View {
                         }
                         .padding(.vertical, 8)
                         ForEach(Array(songResults.enumerated()), id: \.element.identityKey) { index, song in
-                            SongCell(song: song) {
+                            SongCell(
+                                song: song,
+                                isCurrent: currentSongID == song.identityKey,
+                                isPlaying: isPlaying,
+                                onTap: {
                                 BeansHaptics.tap()
                                 player.play(songs: songResults, startAt: index)
-                            }
+                                },
+                                onPlayNext: {
+                                    player.playNext(song)
+                                }
+                            )
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
                             .background {
-                                                                BeansGlass(shape: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                                BeansGlass(shape: RoundedRectangle(cornerRadius: 14, style: .continuous))
                             }
                         }
                     }

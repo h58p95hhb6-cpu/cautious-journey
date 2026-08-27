@@ -36,8 +36,7 @@ struct DiscoverView: View {
             // 实例级 UITabBar 清透风格（固定全透明，无需调节）
             TabBarAppearanceConfigurator()
             ScrollView {
-                ScrollViewReader { proxy in
-                VStack(alignment: .leading, spacing: 26) {
+                LazyVStack(alignment: .leading, spacing: 26) {
                     header
                     providerPicker
                     if let errorMessage {
@@ -571,11 +570,22 @@ struct QQTopListDetailView: View {
                     }
                 } else {
                     List {
+                        let currentSongID = player.currentSong?.identityKey
+                        let isPlaying = player.isPlaying
                         Section {
                             ForEach(Array(tracks.enumerated()), id: \.element.identityKey) { index, song in
-                                SongCell(song: song, glassRow: true) {
-                                    player.play(songs: tracks, startAt: index)
-                                }
+                                SongCell(
+                                    song: song,
+                                    glassRow: true,
+                                    isCurrent: currentSongID == song.identityKey,
+                                    isPlaying: isPlaying,
+                                    onTap: {
+                                        player.play(songs: tracks, startAt: index)
+                                    },
+                                    onPlayNext: {
+                                        player.playNext(song)
+                                    }
+                                )
                                 .listRowBackground(Color.clear)
                                 .listRowSeparator(.hidden)
                             }
@@ -624,11 +634,22 @@ struct QQPlaylistSongsSheet: View {
                     }
                 } else {
                     List {
+                        let currentSongID = player.currentSong?.identityKey
+                        let isPlaying = player.isPlaying
                         Section {
                             ForEach(Array(tracks.enumerated()), id: \.element.identityKey) { index, song in
-                                SongCell(song: song, glassRow: true) {
-                                    player.play(songs: tracks, startAt: index)
-                                }
+                                SongCell(
+                                    song: song,
+                                    glassRow: true,
+                                    isCurrent: currentSongID == song.identityKey,
+                                    isPlaying: isPlaying,
+                                    onTap: {
+                                        player.play(songs: tracks, startAt: index)
+                                    },
+                                    onPlayNext: {
+                                        player.playNext(song)
+                                    }
+                                )
                                 .listRowBackground(Color.clear)
                                 .listRowSeparator(.hidden)
                             }
@@ -672,6 +693,8 @@ struct DailySongsSheet: View {
                     EmptyStateView(icon: "sparkles", text: "今日推荐加载中，下拉刷新试试")
                 } else {
                     List {
+                        let currentSongID = player.currentSong?.identityKey
+                        let isPlaying = player.isPlaying
                     Section {
                         HStack(spacing: 12) {
                             GlassButton(title: "播放全部", systemName: "play.fill", prominent: true) {
@@ -688,10 +711,19 @@ struct DailySongsSheet: View {
                     }
                     Section {
                         ForEach(Array(songs.enumerated()), id: \.element.identityKey) { index, song in
-                            SongCell(song: song, glassRow: true) {
-                                BeansHaptics.tap()
-                                player.play(songs: songs, startAt: index)
-                            }
+                            SongCell(
+                                song: song,
+                                glassRow: true,
+                                isCurrent: currentSongID == song.identityKey,
+                                isPlaying: isPlaying,
+                                onTap: {
+                                    BeansHaptics.tap()
+                                    player.play(songs: songs, startAt: index)
+                                },
+                                onPlayNext: {
+                                    player.playNext(song)
+                                }
+                            )
                             .listRowBackground(Color.clear)
                             .listRowSeparator(.hidden)
                         }
@@ -727,12 +759,23 @@ struct TopListDetailView: View {
                     }
                 } else {
                     List {
+                        let currentSongID = player.currentSong?.identityKey
+                        let isPlaying = player.isPlaying
                         header
                         Section {
                             ForEach(Array(tracks.enumerated()), id: \.element.identityKey) { index, song in
-                                SongCell(song: song, glassRow: true) {
-                                    player.play(songs: tracks, startAt: index)
-                                }
+                                SongCell(
+                                    song: song,
+                                    glassRow: true,
+                                    isCurrent: currentSongID == song.identityKey,
+                                    isPlaying: isPlaying,
+                                    onTap: {
+                                        player.play(songs: tracks, startAt: index)
+                                    },
+                                    onPlayNext: {
+                                        player.playNext(song)
+                                    }
+                                )
                                 .listRowBackground(Color.clear)
                                 .listRowSeparator(.hidden)
                             }
@@ -777,5 +820,3 @@ struct TopListDetailView: View {
         }
     }
 }
-
-

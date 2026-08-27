@@ -1,21 +1,18 @@
 import SwiftUI
 
 struct SongCell: View {
-    @EnvironmentObject private var theme: ThemeStore
-    @EnvironmentObject private var player: PlayerManager
     @EnvironmentObject private var auth: AuthStore
 
     let song: Song
     var showCover = true
     /// 玻璃行模式：为行添加清透液态玻璃底（二级列表页统一风格用）
     var glassRow = false
+    var isCurrent = false
+    var isPlaying = false
     var onTap: (() -> Void)?
+    var onPlayNext: (() -> Void)?
 
     @State private var showAddToPlaylist = false
-
-    private var isCurrent: Bool {
-        player.currentSong?.identityKey == song.identityKey
-    }
 
     private var rowContent: some View {
         HStack(spacing: 12) {
@@ -43,7 +40,7 @@ struct SongCell: View {
                     .lineLimit(1)
             }
             Spacer(minLength: 8)
-            if isCurrent && player.isPlaying {
+            if isCurrent && isPlaying {
                 NowPlayingIndicator()
             } else {
                 Text(song.formattedDuration)
@@ -57,10 +54,12 @@ struct SongCell: View {
             onTap?()
         }
         .contextMenu {
-            Button {
-                player.playNext(song)
-            } label: {
-                Label("下一首播放", systemImage: "text.line.first.and.arrowtriangle.forward")
+            if let onPlayNext {
+                Button {
+                    onPlayNext()
+                } label: {
+                    Label("下一首播放", systemImage: "text.line.first.and.arrowtriangle.forward")
+                }
             }
             Button {
                 showAddToPlaylist = true
@@ -69,9 +68,7 @@ struct SongCell: View {
             }
             if !isCurrent {
                 Button {
-                    if let index = player.queue.firstIndex(of: song) {
-                        player.playQueueIndex(index)
-                    }
+                    onTap?()
                 } label: {
                     Label("立即播放", systemImage: "play.fill")
                 }
@@ -84,12 +81,11 @@ struct SongCell: View {
     }
 
     var body: some View {
-        let _ = theme.accent
         if glassRow {
             rowContent
                 .padding(.horizontal, 10)
                 .background {
-                                        BeansGlass(shape: RoundedRectangle(cornerRadius: 16, style: .continuous))
+                    BeansGlass(shape: RoundedRectangle(cornerRadius: 16, style: .continuous))
                 }
         } else {
             rowContent
