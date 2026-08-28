@@ -96,7 +96,6 @@ struct DiscoverView: View {
                     .environmentObject(player)
                     .environmentObject(auth)
             }
-        }
     }
 
     /// 顶部问候区：大标题 + 刷新按钮
@@ -694,6 +693,7 @@ struct DailySongsSheet: View {
                     List {
                         let currentSongID = player.currentSong?.identityKey
                         let isPlaying = player.isPlaying
+                    }
                     Section {
                         HStack(spacing: 12) {
                             GlassButton(title: "播放全部", systemName: "play.fill", prominent: true) {

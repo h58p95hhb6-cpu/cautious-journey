@@ -309,12 +309,17 @@ final class CoverImageLoader: ObservableObject {
             do {
                 let (data, _) = try await URLSession.shared.data(from: url)
                 guard !Task.isCancelled, let downsampled = Self.downsample(data: data, pixelSize: pixelSize) else { return }
-                Self.cache.setObject(downsampled, forKey: cacheKey as NSString)
-                image = downsampled
+                await self.apply(image: downsampled, cacheKey: cacheKey)
             } catch {
                 guard !Task.isCancelled else { return }
             }
         }
+    }
+
+    @MainActor
+    private func apply(image: UIImage, cacheKey: String) {
+        Self.cache.setObject(image, forKey: cacheKey as NSString)
+        self.image = image
     }
 
     private static func cacheKey(url: URL, pixelSize: Int) -> String {
