@@ -323,7 +323,7 @@ final class CoverImageLoader: ObservableObject {
         "\(url.absoluteString)#\(pixelSize)"
     }
 
-    private static func downsample(data: Data, pixelSize: Int) -> UIImage? {
+    nonisolated private static func downsample(data: Data, pixelSize: Int) -> UIImage? {
         let options: [CFString: Any] = [kCGImageSourceShouldCache: false]
         guard let source = CGImageSourceCreateWithData(data as CFData, options as CFDictionary) else { return nil }
         let downsampleOptions: [CFString: Any] = [
