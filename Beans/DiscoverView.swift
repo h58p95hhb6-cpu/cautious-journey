@@ -693,7 +693,7 @@ struct DailySongsSheet: View {
                     List {
                         let currentSongID = player.currentSong?.identityKey
                         let isPlaying = player.isPlaying
-                    }
+                    
                     Section {
                         HStack(spacing: 12) {
                             GlassButton(title: "播放全部", systemName: "play.fill", prominent: true) {
