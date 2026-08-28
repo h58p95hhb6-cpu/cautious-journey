@@ -545,6 +545,7 @@ struct DiscoverView: View {
         !dailySongs.isEmpty || !topLists.isEmpty || !personalized.isEmpty
             || !qqTopLists.isEmpty
     }
+}
 // MARK: - QQ 峰尖榜详情
 
 struct QQTopListDetailView: View {

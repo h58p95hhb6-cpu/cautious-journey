@@ -305,14 +305,12 @@ final class CoverImageLoader: ObservableObject {
             return
         }
 
-        task = Task.detached(priority: .utility) { [weak self] in
+        task = Task(priority: .utility) { [url, pixelSize, cacheKey] in
             do {
                 let (data, _) = try await URLSession.shared.data(from: url)
                 guard !Task.isCancelled, let downsampled = Self.downsample(data: data, pixelSize: pixelSize) else { return }
-                await MainActor.run {
-                    Self.cache.setObject(downsampled, forKey: cacheKey as NSString)
-                    self?.image = downsampled
-                }
+                Self.cache.setObject(downsampled, forKey: cacheKey as NSString)
+                image = downsampled
             } catch {
                 guard !Task.isCancelled else { return }
             }
